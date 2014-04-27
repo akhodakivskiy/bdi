@@ -49,7 +49,7 @@ class BDITest extends FlatSpec with Matchers {
   }
 
   "BDIParser" should "parse BDI format" in {
-    BDIParser.parseAll(BDIParser.description, "asdf").get should equal ("asdf")
+    BDIParser.parseAll(BDIParser.description, "asdf 12").get should equal ("asdf 12")
     BDIParser.parseAll(BDIParser.account, "23 / 123").get should equal (Account(23, 123))
     BDIParser.parseAll(BDIParser.operation, "Debit").get should equal (Debit)
     BDIParser.parseAll(BDIParser.operation, "Credit").get should equal (Credit)
