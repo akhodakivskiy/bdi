@@ -1,3 +1,3 @@
 To run the application:
 
-./sbt run < src/test/resoures/bdi.txt
+./sbt run < src/test/resources/bdi.txt
