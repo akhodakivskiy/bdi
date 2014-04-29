@@ -15,7 +15,7 @@ class BDITest extends FlatSpec with Matchers {
   val transactions = List(
     Transaction(1, a1, a2, Credit, 100),
     Transaction(2, a2, a3, Debit, 200)
-  )  
+  )
 
   val batch = Batch(100, "Some Batch", transactions)
 
@@ -36,8 +36,9 @@ class BDITest extends FlatSpec with Matchers {
     batchBalance.balances should have length 3
 
     batchBalance.balances.find(_.account == a1).map(_.balance) should be (Some(-100))
-    batchBalance.balances.find(_.account == a2).map(_.balance) should be (Some(-100))
-    batchBalance.balances.find(_.account == a3).map(_.balance) should be (Some(200))
+    batchBalance.balances.find(_.account == a2).map(_.balance) should be (Some(300))
+    batchBalance.balances.find(_.account == a3).map(_.balance) should be (Some(-200))
+    batchBalance.balances.foldLeft(0: Long)((total, b) => total + b.balance) should be (0)
   }
 
   "Serializer" should "produce proper json" in {
@@ -53,7 +54,7 @@ class BDITest extends FlatSpec with Matchers {
     BDIParser.parseAll(BDIParser.account, "23 / 123").get should equal (Account(23, 123))
     BDIParser.parseAll(BDIParser.operation, "Debit").get should equal (Debit)
     BDIParser.parseAll(BDIParser.operation, "Credit").get should equal (Credit)
-    val bdiTransaction = 
+    val bdiTransaction =
       """|Transaction: 302
          |Originator: 111222333 / 9991
          |Recipient: 123456789 / 55550
@@ -61,9 +62,9 @@ class BDITest extends FlatSpec with Matchers {
          |Amount: 380100
          |""".stripMargin
     val transaction = Transaction(
-      302, 
-      Account(111222333, 9991), 
-      Account(123456789, 55550), 
+      302,
+      Account(111222333, 9991),
+      Account(123456789, 55550),
       Credit, 380100
     )
     BDIParser.parseAll(BDIParser.transaction, bdiTransaction).get should equal (transaction)

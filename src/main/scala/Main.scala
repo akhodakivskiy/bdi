@@ -12,7 +12,7 @@ object Main extends App {
       ok = ln != null
       if (ok) input = input + ln + "\n"
     }
-    
+
     val batch = BDIParser.parseAll(BDIParser.bdi, input).get
     val batchBalance = Transact(batch)
     println(ToJson(batchBalance))
@@ -31,16 +31,16 @@ object BDIParser extends RegexParsers {
   def header: Parser[Any] = """.*BDI.*""".r ^^ { a => a }
   def description: Parser[String] = """\w+(\s+\w+)*""".r ^^ { a => a }
   def number: Parser[Long] = """\d+""".r ^^ { _.toLong }
-  def account: Parser[Account] = number ~ ("/" ~> number) ^^ { 
-    case (a ~ b) => Account(a, b) 
+  def account: Parser[Account] = number ~ ("/" ~> number) ^^ {
+    case (a ~ b) => Account(a, b)
   }
-  def operation: Parser[Operation] = """(Credit|Debit)""".r ^^ { 
+  def operation: Parser[Operation] = """(Credit|Debit)""".r ^^ {
     _ match {
       case "Credit" => Credit
       case "Debit" => Debit
     }
   }
-  def transaction: Parser[Transaction] = 
+  def transaction: Parser[Transaction] =
     ("Transaction:" ~> number) ~
     ("Originator:" ~> account) ~
     ("Recipient:" ~> account) ~
@@ -50,10 +50,10 @@ object BDIParser extends RegexParsers {
         Transaction(id, originator, recipient, operation, amount)
     }
 
-  def bdi: Parser[Batch] = 
+  def bdi: Parser[Batch] =
     header ~
-    ("Batch:" ~> number) ~ 
-    ("Description:" ~> description) ~ 
+    ("Batch:" ~> number) ~
+    ("Description:" ~> description) ~
     rep("==" ~> transaction) ^^ {
       case (header ~ id ~ description ~ transactions) => Batch(id, description, transactions)
     }
@@ -66,13 +66,13 @@ object Transact {
         .find(_.account == tr.originator)
         .getOrElse(Balance(tr.originator, 0))
 
-      val updatedOriginator = originator.copy(balance = originator.balance - tr.amount)
+      val updatedOriginator = originator.copy(balance = originator.balance + tr.signedAmount)
 
       val recipient: Balance = balances
         .find(_.account == tr.recipient)
         .getOrElse(Balance(tr.recipient, 0))
 
-      val updatedRecipient = recipient.copy(balance = recipient.balance + tr.amount)
+      val updatedRecipient = recipient.copy(balance = recipient.balance - tr.signedAmount)
 
       val filteredBalances = balances.filter(b => {
         b.account != originator.account && b.account != recipient.account
@@ -92,22 +92,22 @@ object ToJson {
 
   def apply(batchBalance: BatchBalance, pretty: Boolean = true): String = {
     pretty match {
-      case true => Serialization.writePretty(batchBalance)  
-      case false => Serialization.write(batchBalance)  
+      case true => Serialization.writePretty(batchBalance)
+      case false => Serialization.write(batchBalance)
     }
   }
 }
 
 case class Account(
-  number: Long, 
+  number: Long,
   routingNumber: Long
 )
 
 case class Transaction(
-  id: Long, 
-  originator: Account, 
-  recipient: Account, 
-  operation: Operation, 
+  id: Long,
+  originator: Account,
+  recipient: Account,
+  operation: Operation,
   amount: Long
 ) {
   def signedAmount = operation match {
@@ -117,8 +117,8 @@ case class Transaction(
 }
 
 case class Batch(
-  id: Long, 
-  description: String, 
+  id: Long,
+  description: String,
   transactions: List[Transaction]
 )
 
@@ -129,7 +129,7 @@ case class Balance(
 
 
 case class BatchBalance(
-  id: Long, 
-  description: String, 
+  id: Long,
+  description: String,
   balances: List[Balance]
 )
